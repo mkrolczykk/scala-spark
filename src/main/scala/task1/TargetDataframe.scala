@@ -9,12 +9,12 @@ import org.apache.spark.sql.types._
 
 object TargetDataframe {
   //  INPUT
-//  val CLICKSTREAM_DATA_PATH = "capstone-dataset/mobile_app_clickstream/*.csv.gz"
-//  val PURCHASES_DATA_PATH = "capstone-dataset/user_purchases/*.csv.gz"
-  val CLICKSTREAM_DATA_PATH = "src/main/resources/mobile-app-clickstream_sample.tsv"
-  val PURCHASES_DATA_PATH = "src/main/resources/purchases_sample.tsv"
+//  private val CLICKSTREAM_DATA_PATH = "capstone-dataset/mobile_app_clickstream/*.csv.gz"
+//  private val PURCHASES_DATA_PATH = "capstone-dataset/user_purchases/*.csv.gz"
+  private val CLICKSTREAM_DATA_PATH = "src/main/resources/mobile-app-clickstream_sample.tsv"
+  private val PURCHASES_DATA_PATH = "src/main/resources/purchases_sample.tsv"
   // OUTPUT
-  val WRITE_OUTPUT_PATH = "src/main/resources/task1_result/"
+  private val WRITE_OUTPUT_PATH = "src/main/resources/task1_result/"
 
   val clickStreamDataSchema: StructType = StructType(Array(
     StructField("userId", StringType, nullable = false),
@@ -31,7 +31,7 @@ object TargetDataframe {
     StructField("isConfirmed", BooleanType, nullable = false),
   ))
 
-  val spark: SparkSession =
+  private val spark: SparkSession =
     SparkSession
       .builder()
       .appName("Create Build Purchases Attribution Projection")
@@ -47,13 +47,12 @@ object TargetDataframe {
     val resultDF = generatePurchasesAttributionProjection(clickStreamDataDF, purchasesDataDF)
 
     resultDF.show(30, false)
-//    resultDF.printSchema()
 
     writeAsParquet(resultDF, WRITE_OUTPUT_PATH)
     spark.close()
   }
 
-  def read(path: String, schema: StructType): DataFrame = {
+  private def read(path: String, schema: StructType): DataFrame = {
     spark
       .read
       .schema(schema)

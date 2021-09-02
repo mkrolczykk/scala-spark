@@ -10,6 +10,8 @@ spark-warehouse
 # local
 capstone-dataset
 task1_result
+task2_results
+task3_results
 # sbt
 project/project/
 project/target/
