@@ -1,0 +1,31 @@
+# environment
+.idea/
+*.iml
+*.log
+*.ipr
+*.iws
+.vscode
+# Spark
+spark-warehouse
+# local
+capstone-dataset
+task1_result
+# sbt
+project/project/
+project/target/
+target/
+# scala
+.tasty
+*.class
+# mac
+.DS_Store
+# bloop and metals
+.bloop
+.bsp
+# metals
+project/metals.sbt
+.metals
+# other?
+notes.txt
+.scala_dependencies
+.cache-main
