@@ -8,28 +8,8 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.types._
 
 object TargetDataframe {
-  //  INPUT
-//  private val CLICKSTREAM_DATA_PATH = "capstone-dataset/mobile_app_clickstream/*.csv.gz"
-//  private val PURCHASES_DATA_PATH = "capstone-dataset/user_purchases/*.csv.gz"
-  private val CLICKSTREAM_DATA_PATH = "src/main/resources/mobile-app-clickstream_sample.tsv"
-  private val PURCHASES_DATA_PATH = "src/main/resources/purchases_sample.tsv"
   // OUTPUT
   private val WRITE_OUTPUT_PATH = "src/main/resources/task1_result/"
-
-  val clickStreamDataSchema: StructType = StructType(Array(
-    StructField("userId", StringType, nullable = false),
-    StructField("eventId", StringType, nullable = false),
-    StructField("eventType", StringType, nullable = false),
-    StructField("eventTime", TimestampType, nullable = false),
-    StructField("attributes", StringType, nullable = true),
-  ))
-
-  val purchasesDataSchema: StructType = StructType(Array(
-    StructField("purchaseId", StringType, nullable = false),
-    StructField("purchaseTime", TimestampType, nullable = false),
-    StructField("billingCost", DoubleType, nullable = false),
-    StructField("isConfirmed", BooleanType, nullable = false),
-  ))
 
   private val spark: SparkSession =
     SparkSession
@@ -41,23 +21,13 @@ object TargetDataframe {
 
   /** Main function */
   def main(args: Array[String]): Unit = {
-    val clickStreamDataDF = read(CLICKSTREAM_DATA_PATH, clickStreamDataSchema)
-    val purchasesDataDF = read(PURCHASES_DATA_PATH, purchasesDataSchema)
+    val clickStreamDataDF = readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema)
+    val purchasesDataDF = readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema)
 
     val resultDF = generatePurchasesAttributionProjection(clickStreamDataDF, purchasesDataDF)
 
-    resultDF.show(30, false)
-
     writeAsParquet(resultDF, WRITE_OUTPUT_PATH)
     spark.close()
-  }
-
-  private def read(path: String, schema: StructType): DataFrame = {
-    spark
-      .read
-      .schema(schema)
-      .options(Map("header" -> "true", "inferSchema" -> "true", "delimiter" -> "\t"))
-      .csv(path)
   }
 
   def generatePurchasesAttributionProjection(clickStreamData: DataFrame, purchasesDataDF: DataFrame): DataFrame = {
@@ -100,7 +70,4 @@ object TargetDataframe {
         col("channelId"),
       )
   }
-
-  def writeAsParquet(dfToSave: DataFrame, path: String, saveMode: SaveMode = SaveMode.Overwrite): Unit =
-    dfToSave.write.mode(saveMode).parquet(path)
 }

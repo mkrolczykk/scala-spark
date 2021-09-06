@@ -2,11 +2,8 @@ package org.example
 package task2
 
 import org.apache.spark.sql.expressions.Window
-import org.apache.spark.sql.functions.{col, collect_list, expr, round, row_number, sum}
+import org.apache.spark.sql.functions.{col, collect_list, expr, round, row_number}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.types.{BooleanType, DoubleType, StringType, StructField, StructType, TimestampType}
-
-import task1.TargetDataframe.writeAsParquet
 
 object ChannelsStatistics {
   // INPUT
@@ -14,16 +11,6 @@ object ChannelsStatistics {
   // OUTPUT
   private val BIGGEST_REVENUE_RESULT_WRITE_PATH = "src/main/resources/task2_results/biggest_revenue/"
   private val MOST_POPULAR_CHANNEL_RESULT_WRITE_PATH = "src/main/resources/task2_results/most_popular_channel/"
-
-  val workDFSchema: StructType = StructType(Array(
-    StructField("purchaseId", StringType, nullable = false),
-    StructField("purchaseTime", TimestampType, nullable = false),
-    StructField("billingCost", DoubleType, nullable = false),
-    StructField("isConfirmed", BooleanType, nullable = false),
-    StructField("sessionId", StringType, nullable = false),
-    StructField("campaignId", StringType, nullable = false),
-    StructField("channelId", StringType, nullable = false),
-  ))
 
   private val spark: SparkSession =
     SparkSession
@@ -33,8 +20,9 @@ object ChannelsStatistics {
       .getOrCreate()
   spark.sparkContext.setLogLevel("WARN")
 
+  /** Main function */
   def main(args: Array[String]): Unit = {
-    val targetDF = read(INPUT_DATA_PATH, workDFSchema)  // Build Purchases Attribution Projection dataframe
+    val targetDF = readParquet(spark, INPUT_DATA_PATH, workDFSchema).cache()  // Build Purchases Attribution Projection dataframe
 
     /**
      * SQL version
@@ -47,20 +35,9 @@ object ChannelsStatistics {
 //    val biggestRevenue = calculateCampaignsRevenueDf(targetDF)
 //    val mostPopularChannel = channelsEngagementPerformanceDf(targetDF)
 
-    biggestRevenue.show(30, false)
-    mostPopularChannel.show(30, false)
-
     writeAsParquet(biggestRevenue, BIGGEST_REVENUE_RESULT_WRITE_PATH)
-    writeAsParquet(biggestRevenue, MOST_POPULAR_CHANNEL_RESULT_WRITE_PATH)
+    writeAsParquet(mostPopularChannel, MOST_POPULAR_CHANNEL_RESULT_WRITE_PATH)
     spark.close()
-  }
-
-  private def read(path: String, schema: StructType): DataFrame = {
-    spark
-      .read
-      .schema(schema)
-      .options(Map("header" -> "true", "inferSchema" -> "true"))
-      .parquet(path)
   }
 
   private def calculateCampaignsRevenueSql(summed: DataFrame): DataFrame = {
