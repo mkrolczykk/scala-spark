@@ -10,10 +10,14 @@ import org.apache.spark.sql.functions.{col, dayofmonth, month, year}
 
 object CalculateMetrics {
   // INPUT
-  private val CLICKSTREAM_PARQUET_DATA_PATH = "src/main/resources/task3_results/parquet_dataset/mobile_app_clickstream"  // path for mobile app clickstream dataset in parquet format
-  private val PURCHASES_PARQUET_DATA_PATH = "src/main/resources/task3_results/parquet_dataset/user_purchases" // path for purchases projection dataset in parquet format
+  private val CLICKSTREAM_DATA_PATH = "capstone-dataset/mobile_app_clickstream/*.csv.gz"  // clickstream dataset in .csv.gz format
+  private val PURCHASES_DATA_PATH = "capstone-dataset/user_purchases/*.csv.gz"  // purchases projection dataset in .csv.gz format
+  private val CLICKSTREAM_PARQUET_DATA_PATH = "src/main/resources/task3_results/parquet_dataset/mobile_app_clickstream"  // clickstream dataset in parquet format
+  private val PURCHASES_PARQUET_DATA_PATH = "src/main/resources/task3_results/parquet_dataset/user_purchases" // purchases projection dataset in parquet format
   // OUTPUT
   private val QUERY_PLANS_PATH = "src/main/resources/task3_results"
+
+  val log = LogManager.getRootLogger
 
   val spark: SparkSession =
     SparkSession
@@ -25,7 +29,6 @@ object CalculateMetrics {
 
   /** Main function */
   def main(args: Array[String]): Unit = {
-    val log = LogManager.getRootLogger
 
     // if parquet input dataset doesn't exists
     if (!checkPathExists(CLICKSTREAM_PARQUET_DATA_PATH)) {
@@ -80,12 +83,9 @@ object CalculateMetrics {
     spark.close()
   }
 
-  private def writeAsParquetWithPartitioningByDate(dfToSave: DataFrame, path: String, partitionCol: String): Unit = {
-    def checkColumnCorrectness(colName: String): Boolean = {
-      if(dfToSave.columns.contains(colName) && dfToSave.schema(colName).dataType.typeName == "timestamp") true else false
-    }
+  def writeAsParquetWithPartitioningByDate(dfToSave: DataFrame, path: String, partitionCol: String): Unit = {
 
-    if (checkColumnCorrectness(partitionCol)) {
+    if (checkColumnCorrectness(dfToSave, partitionCol, "timestamp")) {
       dfToSave
         .withColumn("year", year(col(partitionCol)))
         .withColumn("month", month(col(partitionCol)))
@@ -94,7 +94,11 @@ object CalculateMetrics {
         .mode(SaveMode.Overwrite)
         .partitionBy("year", "month", "day")
         .parquet(path)
-    } else throw new NoSuchFieldException(s"Given '$partitionCol' column has wrong type or doesn't exist")
+    } else {
+      log.error(s"Write as parquet with given partition column operation failed - Given '$partitionCol' column has wrong type or doesn't exist")
+      log.warn("Saving data with partitioning by default")
+      writeAsParquet(dfToSave, path)
+    }
   }
 
   private def time[R](block: => R)(logMessage: String): R = {
@@ -107,8 +111,6 @@ object CalculateMetrics {
     println(logMessage + "\n\tExecution time: " + math.BigDecimal(t1 - t0).setScale(3, BigDecimal.RoundingMode.HALF_UP) + unitName)
     result
   }
-
-  private def checkPathExists(path: String): Boolean = if(new java.io.File(path).exists) true else false
 
   private def saveToDisk(data: String, path: String): Unit = {
     import java.io.PrintWriter

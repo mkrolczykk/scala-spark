@@ -5,12 +5,6 @@ import org.apache.spark.sql.types.{BooleanType, DoubleType, StringType, StructFi
 
 package object example {
   /**
-   * Common variables
-   */
-  val CLICKSTREAM_DATA_PATH = "capstone-dataset/mobile_app_clickstream/*.csv.gz"  // path for mobile app clickstream dataset in .csv.gz format
-  val PURCHASES_DATA_PATH = "capstone-dataset/user_purchases/*.csv.gz"  // path for purchases projection dataset in .csv.gz format
-
-  /**
    * Schemas
    */
   val clickStreamDataSchema: StructType = StructType(Array(
@@ -58,4 +52,11 @@ package object example {
   }
 
   def writeAsParquet(dfToSave: DataFrame, path: String): Unit = dfToSave.write.mode(SaveMode.Overwrite).parquet(path)
+
+  def checkColumnCorrectness(df: DataFrame, colName: String, colType: String): Boolean = {
+    if(df.columns.contains(colName) && df.schema(colName).dataType.typeName == colType) true else false
+  }
+
+  def checkPathExists(path: String): Boolean = if(new java.io.File(path).exists) true else false
+
 }

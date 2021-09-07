@@ -8,6 +8,9 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.types._
 
 object TargetDataframe {
+  // INPUT
+  val CLICKSTREAM_DATA_PATH = "capstone-dataset/mobile_app_clickstream/*.csv.gz"  // clickstream dataset in .csv.gz format
+  val PURCHASES_DATA_PATH = "capstone-dataset/user_purchases/*.csv.gz"  // purchases projection dataset in .csv.gz format
   // OUTPUT
   private val WRITE_OUTPUT_PATH = "src/main/resources/task1_result/"
 
@@ -27,6 +30,7 @@ object TargetDataframe {
     val resultDF = generatePurchasesAttributionProjection(clickStreamDataDF, purchasesDataDF)
 
     writeAsParquet(resultDF, WRITE_OUTPUT_PATH)
+
     spark.close()
   }
 
