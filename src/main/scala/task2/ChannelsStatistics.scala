@@ -22,7 +22,7 @@ object ChannelsStatistics {
 
   /** Main function */
   def main(args: Array[String]): Unit = {
-    val targetDF = readParquet(spark, INPUT_DATA_PATH, workDFSchema).cache()  // Build Purchases Attribution Projection dataframe
+    val targetDF = readParquet(spark, INPUT_DATA_PATH, workDFSchema).cache()
 
     /**
      * SQL version
@@ -34,6 +34,9 @@ object ChannelsStatistics {
      */
 //    val biggestRevenue = calculateCampaignsRevenueDf(targetDF)
 //    val mostPopularChannel = channelsEngagementPerformanceDf(targetDF)
+
+    biggestRevenue.show(truncate = false)
+    mostPopularChannel.show(truncate = false)
 
     writeAsParquet(biggestRevenue, BIGGEST_REVENUE_RESULT_WRITE_PATH)
     writeAsParquet(mostPopularChannel, MOST_POPULAR_CHANNEL_RESULT_WRITE_PATH)
@@ -53,8 +56,8 @@ object ChannelsStatistics {
         SELECT campaignId, collect_list(billingCost) as billings
         FROM (
           SELECT *
-          FROM $viewName
-          WHERE $viewName.isConfirmed == TRUE
+          FROM $viewName AS v
+          WHERE v.isConfirmed == TRUE
         )
         GROUP BY campaignId
       )

@@ -2,7 +2,6 @@ package org.example
 package task3
 
 import task1.TargetDataframe.generatePurchasesAttributionProjection
-import task3.CalculateMetrics.writeAsParquetWithPartitioningByDate
 
 import org.apache.log4j.{LogManager, Logger}
 import org.apache.spark.sql.expressions.Window
@@ -52,7 +51,8 @@ object WeeklyPurchasesProjection {
       "purchaseTime"
     )
 
-    writeAsParquetWithPartitioning(result, "year", "quarter", "weekOfQuarter")
+    result.show(truncate = false)
+    writeAsParquetWithPartitioning(result, WEEKLY_PURCHASES_PROJECTION_OUTPUT, "year", "quarter", "weekOfQuarter")
 
     spark.stop()
   }
@@ -91,20 +91,6 @@ object WeeklyPurchasesProjection {
         .withColumn("weekOfQuarter", dense_rank().over(w1))
     } else {
       throw new NoSuchFieldException(s"Given '$timestampCol' column has wrong type or doesn't exist")
-    }
-  }
-
-  private def writeAsParquetWithPartitioning(toSave: DataFrame, partitionCols: String*): Unit = {
-    if (partitionCols.forall(toSave.columns.toList.contains)) {
-      toSave
-        .write
-        .mode(SaveMode.Overwrite)
-        .partitionBy(partitionCols: _*)
-        .parquet(WEEKLY_PURCHASES_PROJECTION_OUTPUT)
-    } else {
-      log.error(s"Write as parquet with given partition columns operation failed - not all of given '$partitionCols' columns exist")
-      log.warn("Saving data with partitioning by default")
-      writeAsParquet(toSave, WEEKLY_PURCHASES_PROJECTION_OUTPUT)
     }
   }
 }

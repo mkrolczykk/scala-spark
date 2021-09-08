@@ -1,9 +1,9 @@
 package org.example
 package task3
 
-import org.apache.log4j.LogManager
-import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
-import task1.TargetDataframe.generatePurchasesAttributionProjection
+import org.apache.log4j.{LogManager, Logger}
+import org.apache.spark.sql.{DataFrame, SparkSession}
+import task1.TargetDataframe.{generatePurchasesAttributionProjection, generatePurchasesAttributionProjectionWithUDAF}
 import task2.ChannelsStatistics.{calculateCampaignsRevenueSqlQuery, channelsEngagementPerformanceSqlQuery}
 
 import org.apache.spark.sql.functions.{col, dayofmonth, month, year}
@@ -17,7 +17,7 @@ object CalculateMetrics {
   // OUTPUT
   private val QUERY_PLANS_PATH = "src/main/resources/task3_results"
 
-  val log = LogManager.getRootLogger
+  val log: Logger = LogManager.getRootLogger
 
   val spark: SparkSession =
     SparkSession
@@ -42,11 +42,13 @@ object CalculateMetrics {
      * task #3.1 - performance on top Csv input
      */
 //    task1TopCsvInputPerformance()
+//    task1UDAFTopCsvInputPerformance()
 
     /**
      * task #3.1 - performance on parquet input
      */
 //    task1ParquetInputPerformance()
+//    task1UDAFParquetInputPerformance()
 
     /**
      * task #3.2 - Calculate metrics from Task #2 for
@@ -83,24 +85,6 @@ object CalculateMetrics {
     spark.close()
   }
 
-  def writeAsParquetWithPartitioningByDate(dfToSave: DataFrame, path: String, partitionCol: String): Unit = {
-
-    if (checkColumnCorrectness(dfToSave, partitionCol, "timestamp")) {
-      dfToSave
-        .withColumn("year", year(col(partitionCol)))
-        .withColumn("month", month(col(partitionCol)))
-        .withColumn("day", dayofmonth(col(partitionCol)))
-        .write
-        .mode(SaveMode.Overwrite)
-        .partitionBy("year", "month", "day")
-        .parquet(path)
-    } else {
-      log.error(s"Write as parquet with given partition column operation failed - Given '$partitionCol' column has wrong type or doesn't exist")
-      log.warn("Saving data with partitioning by default")
-      writeAsParquet(dfToSave, path)
-    }
-  }
-
   private def time[R](block: => R)(logMessage: String): R = {
     val unit = 1000000000.0 // seconds
     val unitName = "s"
@@ -128,6 +112,17 @@ object CalculateMetrics {
     }("Task #1 with Csv input")
   }
 
+  private def task1UDAFTopCsvInputPerformance(): Unit = {
+    time {
+      val clickStreamDataCsv = readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema)
+      val purchasesDataCsv = readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema)
+
+      val df = generatePurchasesAttributionProjectionWithUDAF(clickStreamDataCsv, purchasesDataCsv)
+
+      df.show(truncate = false) // force an action
+    }("Task #1 UDAF with Csv input")
+  }
+
   private def task1ParquetInputPerformance(): Unit = {
     time {
       val clickStreamDataParquet = readParquet(spark, CLICKSTREAM_PARQUET_DATA_PATH, clickStreamDataSchema)
@@ -137,6 +132,17 @@ object CalculateMetrics {
 
       df.show(truncate = false)
     }("Task #1 with Parquet input")
+  }
+
+  private def task1UDAFParquetInputPerformance(): Unit = {
+    time {
+      val clickStreamDataParquet = readParquet(spark, CLICKSTREAM_PARQUET_DATA_PATH, clickStreamDataSchema)
+      val purchasesDataParquet = readParquet(spark, PURCHASES_PARQUET_DATA_PATH, purchasesDataSchema)
+
+      val df = generatePurchasesAttributionProjectionWithUDAF(clickStreamDataParquet, purchasesDataParquet)
+
+      df.show(truncate = false)
+    }("Task #1 UDAF with Parquet input")
   }
 
   private def task2CalcMetricsForYearAndMonthWithCsvInput(f: String => String, yearNumber: Int, monthNumber: Int, logMessage: String): Unit = {
