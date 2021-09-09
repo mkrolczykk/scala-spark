@@ -3,6 +3,7 @@ package org
 import org.apache.spark.sql.functions.{col, dayofmonth, month, year}
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{BooleanType, DoubleType, StringType, StructField, StructType, TimestampType}
+import org.example.task1._
 import org.example.task3.CalculateMetrics.log
 
 package object example {
@@ -10,29 +11,29 @@ package object example {
    * Schemas
    */
   val clickStreamDataSchema: StructType = StructType(Array(
-    StructField("userId", StringType, nullable = false),
-    StructField("eventId", StringType, nullable = false),
-    StructField("eventType", StringType, nullable = false),
-    StructField("eventTime", TimestampType, nullable = false),
-    StructField("attributes", StringType, nullable = true),
+    StructField(COL_USER_ID, StringType, nullable = false),
+    StructField(COL_EVENT_ID, StringType, nullable = false),
+    StructField(COL_EVENT_TYPE, StringType, nullable = false),
+    StructField(COL_EVENT_TIME, TimestampType, nullable = false),
+    StructField(COL_ATTRIBUTES, StringType, nullable = true),
   ))
 
   val purchasesDataSchema: StructType = StructType(Array(
-    StructField("purchaseId", StringType, nullable = false),
-    StructField("purchaseTime", TimestampType, nullable = false),
-    StructField("billingCost", DoubleType, nullable = false),
-    StructField("isConfirmed", BooleanType, nullable = false),
+    StructField(COL_PURCHASE_ID, StringType, nullable = false),
+    StructField(COL_PURCHASE_TIME, TimestampType, nullable = false),
+    StructField(COL_BILLING_COST, DoubleType, nullable = false),
+    StructField(COL_IS_CONFIRMED, BooleanType, nullable = false),
   ))
 
   // Build Purchases Attribution Projection dataframe schema
   val workDFSchema: StructType = StructType(Array(
-    StructField("purchaseId", StringType, nullable = false),
-    StructField("purchaseTime", TimestampType, nullable = false),
-    StructField("billingCost", DoubleType, nullable = false),
-    StructField("isConfirmed", BooleanType, nullable = false),
-    StructField("sessionId", StringType, nullable = false),
-    StructField("campaignId", StringType, nullable = false),
-    StructField("channelId", StringType, nullable = false),
+    StructField(COL_PURCHASE_ID, StringType, nullable = false),
+    StructField(COL_PURCHASE_TIME, TimestampType, nullable = false),
+    StructField(COL_BILLING_COST, DoubleType, nullable = false),
+    StructField(COL_IS_CONFIRMED, BooleanType, nullable = false),
+    StructField(COL_SESSION_ID, StringType, nullable = false),
+    StructField(COL_CAMPAIGN_ID, StringType, nullable = false),
+    StructField(COL_CHANNEL_ID, StringType, nullable = false),
   ))
 
   /**
@@ -92,4 +93,5 @@ package object example {
   }
 
   def checkPathExists(path: String): Boolean = if(new java.io.File(path).exists) true else false
+
 }

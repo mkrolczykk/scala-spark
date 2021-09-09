@@ -39,45 +39,45 @@ object TargetDataframe {
 
   /*
     Task #1.1
- */
+  */
   def generatePurchasesAttributionProjection(clickStreamData: DataFrame, purchasesDataDF: DataFrame): DataFrame = {
-    val w1 = Window.partitionBy("userId").orderBy("eventTime")
-    val w2 = Window.partitionBy("sessionId")
+    val w1 = Window.partitionBy(COL_USER_ID).orderBy(COL_EVENT_TIME)
+    val w2 = Window.partitionBy(COL_SESSION_ID)
 
     val clickStreamDataDF = clickStreamData
-      .filter(col("attributes").isNotNull)
+      .filter(col(COL_ATTRIBUTES).isNotNull)
       .withColumn("sessionStart",
         when(
-          col("eventType") === EventType.appOpen.toString,
+          col(COL_EVENT_TYPE) === EventType.appOpen.toString,
           monotonically_increasing_id() + 1
         ).otherwise(lit(0))
       )
-      .withColumn("sessionId", sum("sessionStart").over(w1).cast(StringType))
-      .withColumn("allAttributes", collect_list("attributes").over(w2))
-      .dropDuplicates("sessionId")
+      .withColumn(COL_SESSION_ID, sum("sessionStart").over(w1).cast(StringType))
+      .withColumn("allAttributes", collect_list(COL_ATTRIBUTES).over(w2))
+      .dropDuplicates(COL_SESSION_ID)
       .withColumn("campaign_details", col("allAttributes")(0))
       .withColumn("purchase", explode(expr("slice(allAttributes, 2, SIZE(allAttributes))")))
-      .withColumn("campaignId", get_json_object(col("campaign_details"), "$.campaign_id"))
-      .withColumn("channelId", get_json_object(col("campaign_details"), "$.channel_id"))
+      .withColumn(COL_CAMPAIGN_ID, get_json_object(col("campaign_details"), "$.campaign_id"))
+      .withColumn(COL_CHANNEL_ID, get_json_object(col("campaign_details"), "$.channel_id"))
       .withColumn("purchase_id", get_json_object(col("purchase"), "$.purchase_id"))
       .select(
-        col("userId"),
-        col("sessionId"),
-        col("campaignId"),
-        col("channelId"),
+        col(COL_USER_ID),
+        col(COL_SESSION_ID),
+        col(COL_CAMPAIGN_ID),
+        col(COL_CHANNEL_ID),
         col("purchase_id")
       )
 
     clickStreamDataDF
-      .join(broadcast(purchasesDataDF), clickStreamDataDF("purchase_id") <=> purchasesDataDF("purchaseId"), "inner")
+      .join(broadcast(purchasesDataDF), clickStreamDataDF("purchase_id") <=> purchasesDataDF(COL_PURCHASE_ID), "inner")
       .select(
-        col("purchaseId"),
-        col("purchaseTime"),
-        col("billingCost"),
-        col("isConfirmed"),
-        col("sessionId"),
-        col("campaignId"),
-        col("channelId"),
+        col(COL_PURCHASE_ID),
+        col(COL_PURCHASE_TIME),
+        col(COL_BILLING_COST),
+        col(COL_IS_CONFIRMED),
+        col(COL_SESSION_ID),
+        col(COL_CAMPAIGN_ID),
+        col(COL_CHANNEL_ID),
       )
   }
   /*
@@ -86,43 +86,43 @@ object TargetDataframe {
   def generatePurchasesAttributionProjectionWithUDAF(clickStreamData: DataFrame, purchasesDataDF: DataFrame): DataFrame = {
     val sumUDAF = udaf(sumAgg)
     val valuesUDAF = udaf(valuesAgg)
-    val w1 = Window.partitionBy("userId").orderBy("eventTime")
-    val w2 = Window.partitionBy("sessionId")
+    val w1 = Window.partitionBy(COL_USER_ID).orderBy(COL_EVENT_TIME)
+    val w2 = Window.partitionBy(COL_SESSION_ID)
 
     val clickStreamDataDF = clickStreamData
-      .filter(col("attributes").isNotNull)
+      .filter(col(COL_ATTRIBUTES).isNotNull)
       .withColumn("sessionStart",
         when(
-          col("eventType") === EventType.appOpen.toString,
+          col(COL_EVENT_TYPE) === EventType.appOpen.toString,
           monotonically_increasing_id() + 1
         ).otherwise(lit(0))
       )
       .withColumn("sessionId", sumUDAF(col("sessionStart")).over(w1))
-      .withColumn("allAttributes", valuesUDAF(col("attributes")).over(w2))
-      .dropDuplicates("sessionId")
+      .withColumn("allAttributes", valuesUDAF(col(COL_ATTRIBUTES)).over(w2))
+      .dropDuplicates(COL_SESSION_ID)
       .withColumn("campaign_details", col("allAttributes")(0))
       .withColumn("purchase", explode(expr("slice(allAttributes, 2, SIZE(allAttributes))")))
-      .withColumn("campaignId", get_json_object(col("campaign_details"), "$.campaign_id"))
-      .withColumn("channelId", get_json_object(col("campaign_details"), "$.channel_id"))
+      .withColumn(COL_CAMPAIGN_ID, get_json_object(col("campaign_details"), "$.campaign_id"))
+      .withColumn(COL_CHANNEL_ID, get_json_object(col("campaign_details"), "$.channel_id"))
       .withColumn("purchase_id", get_json_object(col("purchase"), "$.purchase_id"))
       .select(
-        col("userId"),
-        col("sessionId"),
-        col("campaignId"),
-        col("channelId"),
+        col(COL_USER_ID),
+        col(COL_SESSION_ID),
+        col(COL_CAMPAIGN_ID),
+        col(COL_CHANNEL_ID),
         col("purchase_id")
       )
 
     clickStreamDataDF
-      .join(broadcast(purchasesDataDF), clickStreamDataDF("purchase_id") <=> purchasesDataDF("purchaseId"), "inner")
+      .join(broadcast(purchasesDataDF), clickStreamDataDF("purchase_id") <=> purchasesDataDF(COL_PURCHASE_ID), "inner")
       .select(
-        col("purchaseId"),
-        col("purchaseTime"),
-        col("billingCost"),
-        col("isConfirmed"),
-        col("sessionId"),
-        col("campaignId"),
-        col("channelId"),
+        col(COL_PURCHASE_ID),
+        col(COL_PURCHASE_TIME),
+        col(COL_BILLING_COST),
+        col(COL_IS_CONFIRMED),
+        col(COL_SESSION_ID),
+        col(COL_CAMPAIGN_ID),
+        col(COL_CHANNEL_ID),
       )
   }
 
