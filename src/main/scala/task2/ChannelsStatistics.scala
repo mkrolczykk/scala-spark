@@ -5,6 +5,8 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.{col, collect_list, expr, round, row_number}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
+import task1._
+
 object ChannelsStatistics {
   // INPUT
   private val INPUT_DATA_PATH = "src/main/resources/task1_result/*"
@@ -51,17 +53,17 @@ object ChannelsStatistics {
 
   def calculateCampaignsRevenueSqlQuery(viewName: String): String = {
     s"""
-      SELECT campaignId, round(AGGREGATE(billings, DOUBLE(0), (acc, x) -> acc + x), 2) as revenue
+      SELECT $COL_CAMPAIGN_ID, round(AGGREGATE(billings, DOUBLE(0), (acc, x) -> acc + x), 2) as $COL_REVENUE
       FROM (
-        SELECT campaignId, collect_list(billingCost) as billings
+        SELECT $COL_CAMPAIGN_ID, collect_list(billingCost) as billings
         FROM (
           SELECT *
           FROM $viewName AS v
-          WHERE v.isConfirmed == TRUE
+          WHERE v.$COL_IS_CONFIRMED == TRUE
         )
-        GROUP BY campaignId
+        GROUP BY $COL_CAMPAIGN_ID
       )
-      ORDER BY revenue DESC LIMIT 10
+      ORDER BY $COL_REVENUE DESC LIMIT $ROW_LIMIT
     """
   }
 
@@ -72,13 +74,15 @@ object ChannelsStatistics {
    */
   def calculateCampaignsRevenueDf(summed: DataFrame): DataFrame = {
     summed
-      .filter(col("isConfirmed") === true)
-      .groupBy("campaignId")
+      .filter(col(COL_IS_CONFIRMED) === true)
+      .groupBy(COL_CAMPAIGN_ID)
       .agg(collect_list(col("billingCost")).alias("billings"))
-      .select(col("campaignId"),
-        round(expr("AGGREGATE(billings, DOUBLE(0), (acc, x) -> acc + x)"), 2).alias("revenue"))
-      .orderBy(col("revenue").desc)
-      .limit(10)
+      .select(
+        col(COL_CAMPAIGN_ID),
+        round(expr("AGGREGATE(billings, DOUBLE(0), (acc, x) -> acc + x)"), 2).alias(COL_REVENUE)
+      )
+      .orderBy(col(COL_REVENUE).desc)
+      .limit(ROW_LIMIT)
   }
 
   private def channelsEngagementPerformanceSql(summed: DataFrame): DataFrame = {
@@ -89,13 +93,13 @@ object ChannelsStatistics {
 
   def channelsEngagementPerformanceSqlQuery(viewName: String): String = {
     s"""
-      SELECT campaignId, channelId, unique_sessions
+      SELECT $COL_CAMPAIGN_ID, $COL_CHANNEL_ID, $COL_UNIQUE_SESSIONS
       FROM (
-        SELECT campaignId, channelId, unique_sessions, ROW_NUMBER() OVER(PARTITION BY campaignId ORDER BY unique_sessions DESC) as rnk
+        SELECT $COL_CAMPAIGN_ID, $COL_CHANNEL_ID, $COL_UNIQUE_SESSIONS, ROW_NUMBER() OVER(PARTITION BY $COL_CAMPAIGN_ID ORDER BY $COL_UNIQUE_SESSIONS DESC) as rnk
         FROM (
-          SELECT campaignId, channelId, COUNT(*) as unique_sessions
+          SELECT $COL_CAMPAIGN_ID, $COL_CHANNEL_ID, COUNT(*) as $COL_UNIQUE_SESSIONS
           FROM $viewName
-          GROUP BY campaignId, channelId
+          GROUP BY $COL_CAMPAIGN_ID, $COL_CHANNEL_ID
         )
       )
       WHERE rnk == 1
@@ -108,13 +112,18 @@ object ChannelsStatistics {
    * @return the most popular channel that drives the highest amount of unique sessions (engagements) with the App in each campaign
    */
   def channelsEngagementPerformanceDf(summed: DataFrame): DataFrame = {
-    val window = Window.partitionBy("campaignId").orderBy(col("count").desc)
+    val window = Window.partitionBy(COL_CAMPAIGN_ID).orderBy(col("count").desc)
 
     summed
-      .groupBy("campaignId", "channelId")
+      .groupBy(COL_CAMPAIGN_ID, COL_CHANNEL_ID)
       .count()
       .withColumn("row", row_number().over(window))
-      .filter(col("row") === 1).drop("row")
-      .withColumnRenamed("count", "unique_sessions")
+      .filter(col("row") === 1)
+      .withColumnRenamed("count", COL_UNIQUE_SESSIONS)
+      .select(
+        col(COL_CAMPAIGN_ID),
+        col(COL_CHANNEL_ID),
+        col(COL_UNIQUE_SESSIONS)
+      )
   }
 }

@@ -1,13 +1,14 @@
 package org.example
 package task1
 
-import task1.TargetDataframe.{generatePurchasesAttributionProjection, generatePurchasesAttributionProjectionWithUDAF, sumAgg, valuesAgg}
-
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.expressions.Window
 import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.functions.{col, udaf}
-import org.apache.spark.sql.types.{BooleanType, DoubleType, LongType, StringType, TimestampType}
+import org.apache.spark.sql.types.{BooleanType, DoubleType, StringType, TimestampType}
+
+
+import task1.TargetDataframe.{generatePurchasesAttributionProjection, generatePurchasesAttributionProjectionWithUDAF, sumAgg, valuesAgg}
 
 class TargetDataframeSpec extends AnyFunSuite with LocalSparkSession with DataFrameTestUtils {
   import spark.implicits._
@@ -70,7 +71,7 @@ class TargetDataframeSpec extends AnyFunSuite with LocalSparkSession with DataFr
       .withColumn(COL_EVENT_TIME, col(COL_EVENT_TIME).cast(TimestampType))
   }
 
-  val expectedDf: DataFrame = {
+  lazy val expectedDf: DataFrame = {
     Seq(
       ("p1", "2019-01-01 00:01:05", "100.5", "true", "1", "cmp1", "Google Ads"),
       ("p2", "2019-01-01 00:03:10", "200.0", "true", "2", "cmp1", "Yandex Ads"),

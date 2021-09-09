@@ -82,7 +82,7 @@ object TargetDataframe {
   }
   /*
      Task #1.2 - Implement Purchases Attribution Projection by using a custom Aggregator or UDAF
-   */
+  */
   def generatePurchasesAttributionProjectionWithUDAF(clickStreamData: DataFrame, purchasesDataDF: DataFrame): DataFrame = {
     val sumUDAF = udaf(sumAgg)
     val valuesUDAF = udaf(valuesAgg)
