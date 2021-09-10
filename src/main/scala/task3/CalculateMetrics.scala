@@ -3,12 +3,12 @@ package task3
 
 import org.apache.log4j.{LogManager, Logger}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-
 import task1.TargetDataframe.{generatePurchasesAttributionProjection, generatePurchasesAttributionProjectionWithUDAF}
 import task2.ChannelsStatistics.{calculateCampaignsRevenueSqlQuery, channelsEngagementPerformanceSqlQuery}
 import task1._
 
 import org.apache.spark.sql.functions.{col, dayofmonth, month, year}
+import org.example.task3.CalculateMetrics.calculate
 
 object CalculateMetrics {
   // INPUT
@@ -43,14 +43,22 @@ object CalculateMetrics {
     /**
      * task #3.1 - performance on top Csv input
      */
+    // task 1
 //    task1TopCsvInputPerformance()
 //    task1UDAFTopCsvInputPerformance()
+    // task 2
+//    task2CalcMetricsWithCsvInput(calculateCampaignsRevenueSqlQuery, "Task #2.1 with Csv input")
+//    task2CalcMetricsWithCsvInput(channelsEngagementPerformanceSqlQuery, "Task #2.2 with Csv input")
 
     /**
      * task #3.1 - performance on parquet input
      */
+    // task 1
 //    task1ParquetInputPerformance()
 //    task1UDAFParquetInputPerformance()
+    // task 2
+//    task2CalcMetricsWithParquetInput(calculateCampaignsRevenueSqlQuery, "Task #2.1 with parquet input")
+//    task2CalcMetricsWithParquetInput(channelsEngagementPerformanceSqlQuery, "Task #2.2 with parquet input")
 
     /**
      * task #3.2 - Calculate metrics from Task #2 for
@@ -145,6 +153,24 @@ object CalculateMetrics {
 
       df.show(truncate = false)
     }("Task #1 UDAF with Parquet input")
+  }
+
+  private def task2CalcMetricsWithCsvInput(f: String => String, logMessage: String): Unit = {
+    time {
+      val clickStreamDataCsv = readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema)
+      val purchasesDataCsv = readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema)
+
+      calculate(clickStreamDataCsv, purchasesDataCsv, f)
+    }(logMessage)
+  }
+
+  private def task2CalcMetricsWithParquetInput(f: String => String, logMessage: String): Unit = {
+    time {
+      val clickStreamDataParquet = readParquet(spark, CLICKSTREAM_PARQUET_DATA_PATH, clickStreamDataSchema)
+      val purchasesDataParquet = readParquet(spark, PURCHASES_PARQUET_DATA_PATH, purchasesDataSchema)
+
+      calculate(clickStreamDataParquet, purchasesDataParquet, f)
+    }(logMessage)
   }
 
   private def task2CalcMetricsForYearAndMonthWithCsvInput(f: String => String, yearNumber: Int, monthNumber: Int, logMessage: String): Unit = {
