@@ -24,11 +24,11 @@ object ChannelsStatistics {
 
   /** Main function */
   def main(args: Array[String]): Unit = {
-    val targetDF = readParquet(spark, INPUT_DATA_PATH, workDFSchema).cache()
+    val targetDF = readParquet(spark, INPUT_DATA_PATH, targetDfSchema).cache()
 
     /**
      * SQL version
-     */
+    */
     val biggestRevenue = calculateCampaignsRevenueSql(targetDF)
     val mostPopularChannel = channelsEngagementPerformanceSql(targetDF)
     /**

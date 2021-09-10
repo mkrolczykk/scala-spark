@@ -26,7 +26,7 @@ package object example {
   ))
 
   // Build Purchases Attribution Projection dataframe schema
-  val workDFSchema: StructType = StructType(Array(
+  val targetDfSchema: StructType = StructType(Array(
     StructField(COL_PURCHASE_ID, StringType, nullable = false),
     StructField(COL_PURCHASE_TIME, TimestampType, nullable = false),
     StructField(COL_BILLING_COST, DoubleType, nullable = false),
@@ -58,7 +58,7 @@ package object example {
   def writeAsParquet(dfToSave: DataFrame, path: String): Unit = dfToSave.write.mode(SaveMode.Overwrite).parquet(path)
 
   def writeAsParquetWithPartitioningByDate(dfToSave: DataFrame, path: String, partitionCol: String): Unit = {
-    if (checkColumnCorrectness(dfToSave, partitionCol, "timestamp")) {
+    if (checkDfHasColumnOfType(dfToSave, partitionCol, TimestampType)) {
       dfToSave
         .withColumn("year", year(col(partitionCol)))
         .withColumn("month", month(col(partitionCol)))
@@ -75,7 +75,7 @@ package object example {
   }
 
   def writeAsParquetWithPartitioning(toSave: DataFrame, path: String, partitionCols: String*): Unit = {
-    if (partitionCols.forall(toSave.columns.toList.contains)) {
+    if (checkColumnsExist(toSave, partitionCols: _*)) {
       toSave
         .write
         .mode(SaveMode.Overwrite)
@@ -88,10 +88,11 @@ package object example {
     }
   }
 
-  def checkColumnCorrectness(df: DataFrame, colName: String, colType: String): Boolean = {
-    if(df.columns.contains(colName) && df.schema(colName).dataType.typeName == colType) true else false
+  def checkDfHasColumnOfType(df: DataFrame, colName: String, colType: Any): Boolean = {
+    if(df.columns.contains(colName) && df.schema(colName).dataType == colType) true else false
   }
 
-  def checkPathExists(path: String): Boolean = if(new java.io.File(path).exists) true else false
+  def checkColumnsExist(df: DataFrame, cols: String*): Boolean = cols.forall(df.columns.toList.contains)
 
+  def checkPathExists(path: String): Boolean = new java.io.File(path).exists
 }

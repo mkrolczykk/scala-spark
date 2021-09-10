@@ -7,7 +7,6 @@ import org.scalatest.funsuite.AnyFunSuite
 import org.apache.spark.sql.functions.{col, udaf}
 import org.apache.spark.sql.types.{BooleanType, DoubleType, StringType, TimestampType}
 
-
 import task1.TargetDataframe.{generatePurchasesAttributionProjection, generatePurchasesAttributionProjectionWithUDAF, sumAgg, valuesAgg}
 
 class TargetDataframeSpec extends AnyFunSuite with LocalSparkSession with DataFrameTestUtils {
@@ -21,7 +20,7 @@ class TargetDataframeSpec extends AnyFunSuite with LocalSparkSession with DataFr
       ("p4", "2019-01-01 2:13:05", "50.2", "true"),
       ("p5", "2019-01-01 2:15:05", "75", "true"),
       ("p6", "2019-01-02 13:03:00", "99", "false")
-    ).toDF(COL_PURCHASE_ID, COL_PURCHASE_TIME, COL_BILLING_COST, COL_IS_CONFIRMED)
+    ).toDF(purchasesDataSchema.fields.toSeq.map(_.name): _*)
       .withColumn(COL_PURCHASE_TIME, col(COL_PURCHASE_TIME).cast(TimestampType))
       .withColumn(COL_BILLING_COST, col(COL_BILLING_COST).cast(DoubleType))
       .withColumn(COL_IS_CONFIRMED, col(COL_IS_CONFIRMED).cast(BooleanType))
@@ -67,7 +66,7 @@ class TargetDataframeSpec extends AnyFunSuite with LocalSparkSession with DataFr
       ("u3", "u3_e21", "view_product_details", "2019-01-02 13:01:20", null),
       ("u3", "u3_e22", "purchase", "2019-01-02 13:03:00", "{'purchase_id': 'p6'}"),
       ("u3", "u3_e23", "app_close",	"2019-01-02 13:06:00", null)
-    ).toDF(COL_USER_ID, COL_EVENT_ID, COL_EVENT_TYPE, COL_EVENT_TIME, COL_ATTRIBUTES)
+    ).toDF(clickStreamDataSchema.fields.toSeq.map(_.name): _*)
       .withColumn(COL_EVENT_TIME, col(COL_EVENT_TIME).cast(TimestampType))
   }
 
@@ -79,7 +78,7 @@ class TargetDataframeSpec extends AnyFunSuite with LocalSparkSession with DataFr
       ("p4", "2019-01-01 02:13:05", "50.2", "true", "15", "cmp2", "Yandex Ads"),
       ("p5", "2019-01-01 02:15:05", "75.0", "true", "15", "cmp2", "Yandex Ads"),
       ("p6", "2019-01-02 13:03:00", "99.0", "false", "22", "cmp2", "Yandex Ads")
-    ).toDF(COL_PURCHASE_ID, COL_PURCHASE_TIME, COL_BILLING_COST, COL_IS_CONFIRMED, COL_SESSION_ID, COL_CAMPAIGN_ID, COL_CHANNEL_ID)
+    ).toDF(targetDfSchema.fields.toSeq.map(_.name): _*)
       .withColumn(COL_PURCHASE_TIME, col(COL_PURCHASE_TIME).cast(TimestampType))
       .withColumn(COL_BILLING_COST, col(COL_BILLING_COST).cast(DoubleType))
       .withColumn(COL_IS_CONFIRMED, col(COL_IS_CONFIRMED).cast(BooleanType))
@@ -88,10 +87,10 @@ class TargetDataframeSpec extends AnyFunSuite with LocalSparkSession with DataFr
   test("dataframe schema correctness") {
     val resDf = generatePurchasesAttributionProjection(sampleClickstreamDF, samplePurchasesDF)
 
-    assert(assertSchema(resDf.schema, expectedDf.schema))
+    assert(assertSchema(resDf.schema, targetDfSchema, checkNullable = false))
   }
 
-  test("dataframe transformations data result") {
+  test("dataframe transformation data result") {
     val resDf = generatePurchasesAttributionProjection(sampleClickstreamDF, samplePurchasesDF)
 
     assert(assertData(resDf, expectedDf))
@@ -100,10 +99,10 @@ class TargetDataframeSpec extends AnyFunSuite with LocalSparkSession with DataFr
   test("dataframe with custom UDAF schema correctness") {
     val resDf = generatePurchasesAttributionProjectionWithUDAF(sampleClickstreamDF, samplePurchasesDF)
 
-    assert(assertSchema(resDf.schema, expectedDf.schema))
+    assert(assertSchema(resDf.schema, targetDfSchema, checkNullable = false))
   }
 
-  test("dataframe with custom UDAF transformations data result") {
+  test("dataframe with custom UDAF transformation data result") {
     val resDf = generatePurchasesAttributionProjectionWithUDAF(sampleClickstreamDF, samplePurchasesDF)
 
     assert(assertData(resDf, expectedDf))

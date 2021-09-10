@@ -8,7 +8,7 @@ package object task1 {
   val COL_EVENT_TIME = "eventTime"
   val COL_ATTRIBUTES = "attributes"
 
-  // Build Purchases Attribution Projection columns names
+  // purchases data columns names
   val COL_PURCHASE_ID = "purchaseId"
   val COL_PURCHASE_TIME = "purchaseTime"
   val COL_BILLING_COST = "billingCost"

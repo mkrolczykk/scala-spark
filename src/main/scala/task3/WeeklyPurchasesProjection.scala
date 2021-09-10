@@ -2,11 +2,13 @@ package org.example
 package task3
 
 import task1.TargetDataframe.generatePurchasesAttributionProjection
+import task1.{COL_EVENT_TIME, COL_PURCHASE_TIME}
 
 import org.apache.log4j.{LogManager, Logger}
+import org.apache.spark.sql._
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql._
+import org.apache.spark.sql.types.TimestampType
 
 
 object WeeklyPurchasesProjection {
@@ -40,24 +42,33 @@ object WeeklyPurchasesProjection {
     if (!checkPathExists(CLICKSTREAM_PARQUET_DATA_PATH)) {
       log.warn("No parquet datasets found - creating new one")
 
-      writeAsParquetWithPartitioningByDate(readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema), CLICKSTREAM_PARQUET_DATA_PATH, "eventTime")
-      writeAsParquetWithPartitioningByDate(readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema), PURCHASES_PARQUET_DATA_PATH, "purchaseTime")
+      writeAsParquetWithPartitioningByDate(readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema), CLICKSTREAM_PARQUET_DATA_PATH, COL_EVENT_TIME)
+      writeAsParquetWithPartitioningByDate(readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema), PURCHASES_PARQUET_DATA_PATH, COL_PURCHASE_TIME)
     } else log.warn("Skipped converting .csv datasets to parquet format - datasets already exist")
 
-    val (clickStreamDataDf, purchasesDataDf) = getDataFrom(yearOfData, quarterOfYear)
+    val clickstreamPath = parsePath(CLICKSTREAM_PARQUET_DATA_PATH, yearOfData, quarterOfYear)
+    val purchasesPath = parsePath(PURCHASES_PARQUET_DATA_PATH, yearOfData, quarterOfYear)
+
+    val (clickStreamDataDf: DataFrame, purchasesDataDf: DataFrame) = try {
+      (readParquet(spark, clickstreamPath, clickStreamDataSchema), readParquet(spark, purchasesPath, purchasesDataSchema))
+    } catch {
+      case _: AnalysisException => log.warn("No input data for given time range - ending spark job")
+      spark.stop()
+      System.exit(0)
+    }
 
     val result = buildWeeklyPurchasesProjectionPerQuarter(
       generatePurchasesAttributionProjection(clickStreamDataDf, purchasesDataDf),
-      "purchaseTime"
+      COL_PURCHASE_TIME
     )
 
     result.show(truncate = false)
-    writeAsParquetWithPartitioning(result, WEEKLY_PURCHASES_PROJECTION_OUTPUT, "year", "quarter", "weekOfQuarter")
+    writeAsParquetWithPartitioning(result, WEEKLY_PURCHASES_PROJECTION_OUTPUT, COL_YEAR, COL_QUARTER, COL_WEEK_OF_YEAR)
 
     spark.stop()
   }
 
-  private def getDataFrom(yearNumber: Int, quarter: Quarter): (DataFrame, DataFrame) = {
+  def parsePath(path: String, yearNumber: Int, quarter: Quarter): String = {
     val months = quarter match {
       case Quarter.Q1 => "1,2,3"
       case Quarter.Q2 => "4,5,6"
@@ -66,29 +77,17 @@ object WeeklyPurchasesProjection {
       case Quarter.ALL => "*"
     }
 
-    val clickstreamPath = s"$CLICKSTREAM_PARQUET_DATA_PATH/year=$yearNumber/month={$months}/*"
-    val purchasesPath = s"$PURCHASES_PARQUET_DATA_PATH/year=$yearNumber/month={$months}/*"
-
-    try {
-      val clickStreamDataParquet = readParquet(spark, clickstreamPath, clickStreamDataSchema)
-      val purchasesDataParquet = readParquet(spark, purchasesPath, purchasesDataSchema)
-
-      (clickStreamDataParquet, purchasesDataParquet)
-    } catch {
-      case _: AnalysisException => log.warn("No input data for given time range")
-      (spark.createDataFrame(spark.sparkContext.emptyRDD[Row], clickStreamDataSchema), spark.createDataFrame(spark.sparkContext.emptyRDD[Row], purchasesDataSchema))
-    }
+    s"$path/year=$yearNumber/month={$months}/*"
   }
 
-  private def buildWeeklyPurchasesProjectionPerQuarter(summedDf: DataFrame, timestampCol: String) = {
-    val w1 = Window.partitionBy("year","quarter").orderBy("weekOfYear")
+  def buildWeeklyPurchasesProjectionPerQuarter(summedDf: DataFrame, timestampCol: String): DataFrame = {
+    val w1 = Window.partitionBy(COL_YEAR, COL_QUARTER).orderBy(COL_WEEK_OF_YEAR)
 
-    if (checkColumnCorrectness(summedDf, timestampCol, "timestamp")) {
+    if (checkDfHasColumnOfType(summedDf, timestampCol, TimestampType)) {
       summedDf
-        .withColumn("year", year(col(timestampCol)))
-        .withColumn("quarter", quarter(col(timestampCol)))
-        .withColumn("weekOfYear", weekofyear(col(timestampCol)))
-        .withColumn("weekOfQuarter", dense_rank().over(w1))
+        .withColumn(COL_YEAR, year(col(timestampCol)))
+        .withColumn(COL_QUARTER, quarter(col(timestampCol)))
+        .withColumn(COL_WEEK_OF_YEAR, weekofyear(col(timestampCol)))
     } else {
       throw new NoSuchFieldException(s"Given '$timestampCol' column has wrong type or doesn't exist")
     }

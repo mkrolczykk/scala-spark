@@ -3,8 +3,10 @@ package task3
 
 import org.apache.log4j.{LogManager, Logger}
 import org.apache.spark.sql.{DataFrame, SparkSession}
+
 import task1.TargetDataframe.{generatePurchasesAttributionProjection, generatePurchasesAttributionProjectionWithUDAF}
 import task2.ChannelsStatistics.{calculateCampaignsRevenueSqlQuery, channelsEngagementPerformanceSqlQuery}
+import task1._
 
 import org.apache.spark.sql.functions.{col, dayofmonth, month, year}
 
@@ -34,8 +36,8 @@ object CalculateMetrics {
     if (!checkPathExists(CLICKSTREAM_PARQUET_DATA_PATH)) {
       log.warn("No parquet datasets found - creating new one")
 
-      writeAsParquetWithPartitioningByDate(readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema), CLICKSTREAM_PARQUET_DATA_PATH, "eventTime")
-      writeAsParquetWithPartitioningByDate(readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema), PURCHASES_PARQUET_DATA_PATH, "purchaseTime")
+      writeAsParquetWithPartitioningByDate(readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema), CLICKSTREAM_PARQUET_DATA_PATH, COL_EVENT_TIME)
+      writeAsParquetWithPartitioningByDate(readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema), PURCHASES_PARQUET_DATA_PATH, COL_PURCHASE_TIME)
     } else log.warn("Skipped converting .csv datasets to parquet format - datasets already exist")
 
     /**
@@ -119,7 +121,7 @@ object CalculateMetrics {
 
       val df = generatePurchasesAttributionProjectionWithUDAF(clickStreamDataCsv, purchasesDataCsv)
 
-      df.show(truncate = false) // force an action
+      df.show(truncate = false)
     }("Task #1 UDAF with Csv input")
   }
 
@@ -149,14 +151,14 @@ object CalculateMetrics {
     val result = time {
       val clickStreamDataCsv = readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema)
         .filter(
-          year(col("eventTime")) === yearNumber &&
-          month(col("eventTime")) === monthNumber
+          year(col(COL_EVENT_TIME)) === yearNumber &&
+          month(col(COL_EVENT_TIME)) === monthNumber
         )
 
       val purchasesDataCsv = readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema)
         .filter(
-          year(col("purchaseTime")) === yearNumber &&
-          month(col("purchaseTime")) === monthNumber
+          year(col(COL_PURCHASE_TIME)) === yearNumber &&
+          month(col(COL_PURCHASE_TIME)) === monthNumber
         )
 
       calculate(clickStreamDataCsv, purchasesDataCsv, f)
@@ -189,16 +191,16 @@ object CalculateMetrics {
     val result = time {
       val clickStreamDataCsv = readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema)
         .filter(
-          year(col("eventTime")) === yearNumber &&
-          month(col("eventTime")) === monthNumber &&
-          dayofmonth(col("eventTime")) === dayNumber
+          year(col(COL_EVENT_TIME)) === yearNumber &&
+          month(col(COL_EVENT_TIME)) === monthNumber &&
+          dayofmonth(col(COL_EVENT_TIME)) === dayNumber
         )
 
       val purchasesDataCsv = readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema)
         .filter(
-          year(col("purchaseTime")) === yearNumber &&
-          month(col("purchaseTime")) === monthNumber &&
-          dayofmonth(col("purchaseTime")) === dayNumber
+          year(col(COL_PURCHASE_TIME)) === yearNumber &&
+          month(col(COL_PURCHASE_TIME)) === monthNumber &&
+          dayofmonth(col(COL_PURCHASE_TIME)) === dayNumber
         )
 
       calculate(clickStreamDataCsv, purchasesDataCsv, f)

@@ -5,8 +5,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.col
 import org.apache.spark.sql.types.{BooleanType, DoubleType, TimestampType}
 import org.scalatest.funsuite.AnyFunSuite
-
-import task1._
+import task1.{COL_CAMPAIGN_ID, _}
 import task2.ChannelsStatistics._
 
 
@@ -21,7 +20,7 @@ class ChannelsStatisticsSpec extends AnyFunSuite with LocalSparkSession with Dat
       ("p4", "2019-01-01 02:13:05", "50.2", "true", "4", "cmp2", "Yandex Ads"),
       ("p5", "2019-01-01 02:15:05", "75.0", "true", "4", "cmp2", "Yandex Ads"),
       ("p6", "2019-01-02 13:03:00", "99.0", "false", "5", "cmp2", "Yandex Ads")
-    ).toDF(COL_PURCHASE_ID, COL_PURCHASE_TIME, COL_BILLING_COST, COL_IS_CONFIRMED, COL_SESSION_ID, COL_CAMPAIGN_ID, COL_CHANNEL_ID)
+    ).toDF(targetDfSchema.fields.toSeq.map(_.name): _*)
       .withColumn(COL_PURCHASE_TIME, col(COL_PURCHASE_TIME).cast(TimestampType))
       .withColumn(COL_BILLING_COST, col(COL_BILLING_COST).cast(DoubleType))
       .withColumn(COL_IS_CONFIRMED, col(COL_IS_CONFIRMED).cast(BooleanType))
@@ -35,8 +34,13 @@ class ChannelsStatisticsSpec extends AnyFunSuite with LocalSparkSession with Dat
 
     val viewName = s"summed"
     sampleDf.createOrReplaceTempView(viewName)
-    val resDf = spark.sql(calculateCampaignsRevenueSqlQuery(viewName))
 
+    val resDf = spark.sql(calculateCampaignsRevenueSqlQuery(viewName))
+    val rowTop1 = resDf.first()
+    val rowTop2 = resDf.head(2)(1)
+
+    assert(rowTop1(0) == "cmp1" && rowTop1(1) == 300.5)
+    assert(rowTop2(0) == "cmp2" && rowTop2(1) == 125.2)
     assert(assertData(resDf, expectedResult))
   }
 
@@ -47,7 +51,11 @@ class ChannelsStatisticsSpec extends AnyFunSuite with LocalSparkSession with Dat
     ).toDF(COL_CAMPAIGN_ID, COL_REVENUE)
 
     val resDf = calculateCampaignsRevenueDf(sampleDf)
+    val rowTop1 = resDf.first()
+    val rowTop2 = resDf.head(2)(1)
 
+    assert(rowTop1(0) == "cmp1" && rowTop1(1) == 300.5)
+    assert(rowTop2(0) == "cmp2" && rowTop2(1) == 125.2)
     assert(assertData(resDf, expectedResult))
   }
 
