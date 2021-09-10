@@ -6,7 +6,7 @@ Scala + Spark capstone project
 - [Task content](#task-content)
 - [Technologies and dependencies](#technologies-and-dependencies)
 - [Requirements](#requirements)
-- [Build instruction](#build-instruction)
+- [Project prepare instruction](#project-prepare-instruction)
 - [Documenting the solution](#documenting-the-solution)
 - [Status](#status)
 - [Contact](#contact)
@@ -128,7 +128,7 @@ The requirements that apply to all tasks:
 * Git
 * Python 3.8 (or higher) and pip3 (package-management system)
 
-## Build instruction
+## Project prepare instruction
 To run project, follow these steps: <br />
 1. Open terminal and clone the project from github repository:
 ```
@@ -139,7 +139,7 @@ $ cd <project_cloned_folder>
 ```
 where <project_cloned_folder> is a path to project root directory <br />
 
-2. (Optional) Create and activate virtualenv: <br />
+2. (Optional) Create and activate virtualenv for installing data generation script requirements: <br />
 * If no virtualenv package installed, run:
 ```
 $ python3 -m pip install --upgrade pip
@@ -166,11 +166,6 @@ $ source ./ENV_NAME/bin/activate
 $ pip3 install -r ./bigdata-input-generator/requirements.txt
 $ python3 ./bigdata-input-generator/main.py
 ```
-5. Start sbt
-```
-$ sbt run
-```
-Select task to execute by entering task number from message in terminal. <br />
 
 ## Documenting the solution
 
