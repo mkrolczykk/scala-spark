@@ -9,6 +9,7 @@ idePackagePrefix := Some("org.example")
 val sparkVersion = "3.1.1"
 val scalatestVersion = "3.2.2"
 val mockitoscalaVersion = "1.16.23"
+val typesafeVersion = "1.3.0"
 
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion,
@@ -17,5 +18,9 @@ libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-streaming" % sparkVersion,
   "org.scalactic" %% "scalactic" % scalatestVersion,
   "org.scalatest" %% "scalatest" % scalatestVersion % Test,
-  "org.mockito" %% "mockito-scala" % mockitoscalaVersion % Test
+  "org.mockito" %% "mockito-scala" % mockitoscalaVersion % Test,
+  "com.typesafe" % "config" % typesafeVersion,
 )
+
+//fork in run := true
+//trapExit := false

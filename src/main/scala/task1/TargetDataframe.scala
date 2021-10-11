@@ -5,34 +5,47 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
-import org.apache.spark.sql.expressions.{Aggregator,Window}
+import org.apache.spark.sql.expressions.{Aggregator, Window}
 import org.apache.spark.sql.types._
+import com.typesafe.config.ConfigFactory
 
-object TargetDataframe {
-  // INPUT
-  val CLICKSTREAM_DATA_PATH = "capstone-dataset/mobile_app_clickstream/*.csv.gz" // clickstream dataset in .csv.gz format
-  val PURCHASES_DATA_PATH = "capstone-dataset/user_purchases/*.csv.gz" // purchases projection dataset in .csv.gz format
-  // OUTPUT
-  private val WRITE_OUTPUT_PATH = "src/main/resources/task1_result"
+import java.nio.file.Paths
 
-  private val spark: SparkSession =
-    SparkSession
-      .builder()
-      .appName("Create Build Purchases Attribution Projection")
-      .master("local")
-      .getOrCreate()
-  spark.sparkContext.setLogLevel("WARN")
+object TargetDataframe extends Task {
+  override val taskId: String = "task1"
+
+  override def checkTaskInput(args: Array[String]): Unit = {
+    if (!(args.length > 0)) {
+      println("Not enough arguments - ending program")
+      System.exit(0)
+    }
+  }
 
   /** Main function */
-  def main(args: Array[String]): Unit = {
-    val clickStreamDataDF = readCsv(spark, CLICKSTREAM_DATA_PATH, clickStreamDataSchema)
-    val purchasesDataDF = readCsv(spark, PURCHASES_DATA_PATH, purchasesDataSchema)
+  def createTargetDataframe(args: Array[String]): Unit = {
+    checkTaskInput(args)
+
+    val configFile = Paths.get(args(0)).toFile
+    val config = ConfigFactory.parseFile(configFile).getConfig(s"$appConfig.$taskId")
+    val sparkConfig: Map[String, String] = getSparkConfig(config)
+
+    val spark: SparkSession =
+      SparkSession
+        .builder()
+        .appName("Create Build Purchases Attribution Projection")
+        .master(config.getString("master"))
+        .getOrCreate()
+    spark.sparkContext.setLogLevel(config.getString("log-level"))
+    sparkConfig.foreach {item => spark.conf.set(item._1, item._2)}
+
+    val clickStreamDataDF = readCsv(spark, config.getString("clickstream-data-input"), clickStreamDataSchema)
+    val purchasesDataDF = readCsv(spark, config.getString("purchases-data-input"), purchasesDataSchema)
 
     val resultDF = generatePurchasesAttributionProjection(clickStreamDataDF, purchasesDataDF)
     // UDAF version
 //    val resultDF = generatePurchasesAttributionProjectionWithUDAF(clickStreamDataDF, purchasesDataDF)
 
-    writeAsParquet(resultDF, WRITE_OUTPUT_PATH)
+    writeAsParquet(resultDF, config.getString("result-output"))
 
     spark.close()
   }

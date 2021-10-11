@@ -6,37 +6,60 @@ import task1.{COL_EVENT_TIME, COL_PURCHASE_TIME}
 
 import org.apache.log4j.{LogManager, Logger}
 import org.apache.spark.sql._
-import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.TimestampType
+import com.typesafe.config.ConfigFactory
+import org.example.{log => log}
 
+import java.nio.file.Paths
 
-object WeeklyPurchasesProjection {
-  // INPUT
-  private val CLICKSTREAM_DATA_PATH = "capstone-dataset/mobile_app_clickstream/*.csv.gz"  // clickstream dataset in .csv.gz format
-  private val PURCHASES_DATA_PATH = "capstone-dataset/user_purchases/*.csv.gz"  // purchases projection dataset in .csv.gz format
-  private val CLICKSTREAM_PARQUET_DATA_PATH = "src/main/resources/task3_results/parquet_dataset/mobile_app_clickstream"  // clickstream dataset in parquet format
-  private val PURCHASES_PARQUET_DATA_PATH = "src/main/resources/task3_results/parquet_dataset/user_purchases" // purchases projection dataset in parquet format
-  // OUTPUT
-  private val WEEKLY_PURCHASES_PROJECTION_OUTPUT = "src/main/resources/task3_results/weekly_purchases_projection"
+object WeeklyPurchasesProjection extends Task {
+  override val taskId: String = "task3"
 
-  val log: Logger = LogManager.getRootLogger
+  override def checkTaskInput(args: Array[String]): Unit = {
+    if(!(args.length >= 3)) {
+      log.error("Not enough arguments, enter <config-file-path> <year> <quarter> values")
+      System.exit(0)
+    }
+  }
 
-  /*
-    Select year and quarter of data
-   */
-  val yearOfData = 2020 // year
-  val quarterOfYear = Quarter.Q4  // quarter
+  def createWeeklyPurchasesProjection(args: Array[String]): Unit = {
+    val log: Logger = LogManager.getRootLogger
 
-  val spark: SparkSession =
-    SparkSession
-      .builder()
-      .appName("Build Weekly purchases Projection within one quarter")
-      .master("local")
-      .getOrCreate()
-  spark.sparkContext.setLogLevel("WARN")
+    checkTaskInput(args)
 
-  def main(args: Array[String]): Unit = {
+    val configFile = Paths.get(args(0)).toFile
+    val config = ConfigFactory.parseFile(configFile).getConfig(s"$appConfig.$taskId")
+    val sparkConfig: Map[String, String] = getSparkConfig(config)
+
+    val CLICKSTREAM_DATA_PATH = config.getString("clickstream-csv-input")
+    val PURCHASES_DATA_PATH = config.getString("purchases-csv-input")
+    val CLICKSTREAM_PARQUET_DATA_PATH = config.getString("clickstream-parquet-input")
+    val PURCHASES_PARQUET_DATA_PATH = config.getString("purchases-parquet-input")
+    val WEEKLY_PURCHASES_PROJECTION_OUTPUT = config.getString("weekly-purchases-output")
+
+    val spark: SparkSession =
+      SparkSession
+        .builder()
+        .appName("Build Weekly purchases Projection within one quarter")
+        .master(config.getString("master"))
+        .getOrCreate()
+    spark.sparkContext.setLogLevel(config.getString("log-level"))
+    sparkConfig.foreach {item => spark.conf.set(item._1, item._2)}
+
+    val intRegex = """(\d+)""".r
+    val yearOfData: Int = args(1) match {
+      case intRegex(str) => str.toInt
+      case _ => 0
+    }
+    val quarterOfYear = args(2) match {
+      case "1" => Quarter.Q1
+      case "2" => Quarter.Q2
+      case "3" => Quarter.Q3
+      case "4" => Quarter.Q4
+      case "all" => Quarter.ALL
+      case _ => Quarter.ALL
+    }
 
     // if parquet input dataset doesn't exists
     if (!checkPathExists(CLICKSTREAM_PARQUET_DATA_PATH)) {
@@ -81,8 +104,6 @@ object WeeklyPurchasesProjection {
   }
 
   def buildWeeklyPurchasesProjectionPerQuarter(summedDf: DataFrame, timestampCol: String): DataFrame = {
-    val w1 = Window.partitionBy(COL_YEAR, COL_QUARTER).orderBy(COL_WEEK_OF_YEAR)
-
     if (checkDfHasColumnOfType(summedDf, timestampCol, TimestampType)) {
       summedDf
         .withColumn(COL_YEAR, year(col(timestampCol)))

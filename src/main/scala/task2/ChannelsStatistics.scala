@@ -4,33 +4,46 @@ package task2
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions.{col, collect_list, expr, round, row_number}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-
 import task1._
 
-object ChannelsStatistics {
-  // INPUT
-  private val INPUT_DATA_PATH = "src/main/resources/task1_result/*"
-  // OUTPUT
-  private val BIGGEST_REVENUE_RESULT_WRITE_PATH = "src/main/resources/task2_results/biggest_revenue/"
-  private val MOST_POPULAR_CHANNEL_RESULT_WRITE_PATH = "src/main/resources/task2_results/most_popular_channel/"
+import com.typesafe.config.ConfigFactory
 
-  private val spark: SparkSession =
-    SparkSession
-      .builder()
-      .appName("Calculate Marketing Campaigns And Channels Statistics")
-      .master("local")
-      .getOrCreate()
-  spark.sparkContext.setLogLevel("WARN")
+import java.nio.file.Paths
+
+object ChannelsStatistics extends Task {
+  override val taskId: String = "task2"
+
+  override def checkTaskInput(args: Array[String]): Unit = {
+    if (!(args.length > 0)) {
+      println("Not enough arguments - ending program")
+      System.exit(0)
+    }
+  }
 
   /** Main function */
-  def main(args: Array[String]): Unit = {
-    val targetDF = readParquet(spark, INPUT_DATA_PATH, targetDfSchema).cache()
+  def calculateStatistics(args: Array[String]): Unit = {
+    checkTaskInput(args)
+
+    val configFile = Paths.get(args(0)).toFile
+    val config = ConfigFactory.parseFile(configFile).getConfig(s"$appConfig.$taskId")
+    val sparkConfig: Map[String, String] = getSparkConfig(config)
+
+    val spark: SparkSession =
+      SparkSession
+        .builder()
+        .appName("Calculate Marketing Campaigns And Channels Statistics")
+        .master(config.getString("master"))
+        .getOrCreate()
+    spark.sparkContext.setLogLevel(config.getString("log-level"))
+    sparkConfig.foreach {item => spark.conf.set(item._1, item._2)}
+
+    val targetDF = readParquet(spark, config.getString("input-data"), targetDfSchema).cache()
 
     /**
      * SQL version
     */
-    val biggestRevenue = calculateCampaignsRevenueSql(targetDF)
-    val mostPopularChannel = channelsEngagementPerformanceSql(targetDF)
+    val biggestRevenue = calculateCampaignsRevenueSql(spark, targetDF)
+    val mostPopularChannel = channelsEngagementPerformanceSql(spark, targetDF)
     /**
      * dataframe API version
      */
@@ -40,12 +53,12 @@ object ChannelsStatistics {
     biggestRevenue.show(truncate = false)
     mostPopularChannel.show(truncate = false)
 
-    writeAsParquet(biggestRevenue, BIGGEST_REVENUE_RESULT_WRITE_PATH)
-    writeAsParquet(mostPopularChannel, MOST_POPULAR_CHANNEL_RESULT_WRITE_PATH)
+    writeAsParquet(biggestRevenue, config.getString("biggest-revenue-output"))
+    writeAsParquet(mostPopularChannel, config.getString("most-popular-channels-output"))
     spark.close()
   }
 
-  private def calculateCampaignsRevenueSql(summed: DataFrame): DataFrame = {
+  private def calculateCampaignsRevenueSql(spark: SparkSession, summed: DataFrame): DataFrame = {
     val viewName = s"summed"
     summed.createOrReplaceTempView(viewName)
     spark.sql(calculateCampaignsRevenueSqlQuery(viewName))
@@ -85,7 +98,7 @@ object ChannelsStatistics {
       .limit(ROW_LIMIT)
   }
 
-  private def channelsEngagementPerformanceSql(summed: DataFrame): DataFrame = {
+  private def channelsEngagementPerformanceSql(spark: SparkSession, summed: DataFrame): DataFrame = {
     val viewName = s"summed"
     summed.createOrReplaceTempView(viewName)
     spark.sql(channelsEngagementPerformanceSqlQuery(viewName))

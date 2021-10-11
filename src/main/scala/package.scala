@@ -1,12 +1,17 @@
 package org
 
+import com.typesafe.config.Config
+import org.apache.log4j.{Level, LogManager, Logger}
 import org.apache.spark.sql.functions.{col, dayofmonth, month, year}
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{BooleanType, DoubleType, StringType, StructField, StructType, TimestampType}
 import org.example.task1._
-import org.example.task3.CalculateMetrics.log
+
+import scala.collection.JavaConverters._
 
 package object example {
+  val log: Logger = LogManager.getRootLogger
+  log.setLevel(Level.ERROR)
   /**
    * Schemas
    */
@@ -95,4 +100,12 @@ package object example {
   def checkColumnsExist(df: DataFrame, cols: String*): Boolean = cols.forall(df.columns.toList.contains)
 
   def checkPathExists(path: String): Boolean = new java.io.File(path).exists
+
+  def getSparkConfig(config: Config, attribute: String = "spark-config"): Map[String, String] = {
+    config.getObject(attribute).keySet().asScala.map { key =>
+      key -> config.getString(s"$attribute.$key")
+    }.toMap
+  }
+
+  def checkConfigExists(args: Array[String]): Boolean = if (args.length > 1 && checkPathExists(args(1))) true else false
 }

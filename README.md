@@ -7,11 +7,12 @@ Scala + Spark capstone project
 - [Technologies and dependencies](#technologies-and-dependencies)
 - [Requirements](#requirements)
 - [Project prepare instruction](#project-prepare-instruction)
+- [Running project tasks](#running-project-tasks)
 - [Documenting the solution](#documenting-the-solution)
 - [Status](#status)
 - [Contact](#contact)
 
-## Task content
+## Task content 
 ### Domain
 You work at a data engineering department of a company building an ecommerce platform. There is a mobile application that
 is used by customers to transact with its on-line store. Marketing department of the company has set up various campaigns
@@ -129,7 +130,7 @@ The requirements that apply to all tasks:
 * Python 3.8 (or higher) and pip3 (package-management system)
 
 ## Project prepare instruction
-To run project, follow these steps: <br />
+To prepare project, follow these steps: <br />
 1. Open terminal and clone the project from github repository:
 ```
 $ git clone https://github.com/gridu/SCALA-SPARK_mkrolczyk.git
@@ -165,6 +166,94 @@ $ source ./ENV_NAME/bin/activate
 // else
 $ pip3 install -r ./bigdata-input-generator/requirements.txt
 $ python3 ./bigdata-input-generator/main.py
+```
+
+4. (Optional) Open 'application.conf' file and adjust project settings to your needs
+
+5. Run following commands from project root directory:
+```
+$ sbt clean
+$ sbt compile
+```
+Project should be ready to use.
+
+## Running project tasks
+General run command schema is:
+```
+$ sbt "run <task_option> <path_to_project_config_file> <task_specific_option1> <task_specific_option2> ..."
+```
+where:
+* <task_option> is a type of task to run (possible options: "task1", "task2", "task3-metric", "task3-weekly")
+* <path_to_project_config_file> is a path to project config file <br />
+* <task_specific_option1>, <task_specific_option2> (...) are arguments for selected task <br /> <br />
+
+To start particular task, use following commands:
+### Task 1:
+```
+$ sbt "run task1 <path_to_project_config_file>"
+```
+where <path_to_project_config_file> is a path to project config file <br /> <br />
+
+Example (from project root directory): 
+```
+$ sbt "run task1 ./application.conf"
+```
+
+### Task 2:
+```
+$ sbt "run task2 <path_to_project_config_file>"
+```
+where <path_to_project_config_file> is a path to project config file <br /> <br />
+
+Example (from project root directory):
+```
+$ sbt "run task2 ./application.conf"
+```
+
+### Task 3:
+```
+$ sbt "run task3-metric <path_to_project_config_file> <metric_type>"
+```
+where:
+* <path_to_project_config_file> is a path to project config file <br />
+* <metric_type> is the name of metric to calculate <br /> <br />
+
+List of available metrics: <br />
+* "t1-csv" - task 1 with csv input
+* "t1-csv-udaf" - task 1 with csv input and udaf functions
+* "t1-parquet" - task 1 with parquet input
+* "t1-parquet-udaf" - task 1 with parquet input and udaf functions
+* "t2-csv-revenue" - task 2 revenue with csv input
+* "t2-csv-engagement" - task 2 engagement with csv input
+* "t2-parquet-revenue" - task 2 revenue with parquet input
+* "t2-parquet-engagement" - task 2 engagement with parquet input
+* "t3-csv-revenue-sept" - revenue with csv input for September
+* "t3-csv-engagement-sept" - engagements with csv input for September
+* "t3-parquet-revenue-sept" - revenue with parquet input for September
+* "t3-parquet-engagement-sept" - engagement with parquet input for September
+* "t3-csv-revenue-day" - revenue with csv input for 2020-11-11
+* "t3-csv-engagement-day" - engagements with csv input for 2020-11-11
+* "t3-parquet-revenue-day" - revenue with parquet input for 2020-11-11
+* "t3-parquet-engagement-day" - engagement with parquet input for 2020-11-11
+
+Example (from project root directory):
+```
+$ sbt "run task3-metric ./application.conf t1-parquet" 
+```
+<br />
+
+#### Weekly purchases projection per quarter: 
+```
+$ sbt "run task3-weekly <path_to_project_config_file> <year_number> <quarter_of_year>"
+```
+where:
+* <path_to_project_config_file> is a path to project config file <br />
+* <year_number> is a year from which we want to get the data <br />
+* <quarter_of_year> is a quarter of year (possible options: "1", "2", "3", "4" or "all") <br /> <br />
+
+Example (from project root directory):
+```
+$ sbt "run task3-weekly ./application.conf 2020 4"
 ```
 
 ## Documenting the solution
