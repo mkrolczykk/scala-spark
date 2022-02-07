@@ -1,5 +1,4 @@
-# GridU Introduction to BigData (Scala+Spark)
-Scala + Spark capstone project
+# Big data Scala + Spark project
 
 
 ## Table of contents
@@ -18,14 +17,6 @@ You work at a data engineering department of a company building an ecommerce pla
 is used by customers to transact with its on-line store. Marketing department of the company has set up various campaigns
 (e.g. “Buy one thing and get another one as a gift”, etc.)  via different marketing channels (e.g. Google / Yandex / Facebook Ads,
 etc.).
-
-Now the business wants to know the efficiency of the campaigns and channels.
-
-Let’s help them out!
-
-### Dataset link:
-
-https://github.com/gridu/INTRO_SPARK-SCALA_FOR_STUDENTS <br />
 
 ###  Given datasets
 ####  Mobile App click stream projection
@@ -117,8 +108,7 @@ The requirements that apply to all tasks:
 * The logic should be covered with unit tests
 * The output should be saved as PARQUET files
 * Configurable input and output for both tasks
-* Will be a plus: README file in the project documenting the solution
-* Will be a plus: Integrational tests that cover the main method
+* README file in the project documenting the solution
 
 ## Technologies and dependencies
 * Scala 2.12.10
@@ -133,7 +123,7 @@ The requirements that apply to all tasks:
 To prepare project, follow these steps: <br />
 1. Open terminal and clone the project from github repository:
 ```
-$ git clone https://github.com/gridu/SCALA-SPARK_mkrolczyk.git
+$ git clone https://github.com/mkrolczyk12/scala-spark.git
 ```
 ```
 $ cd <project_cloned_folder>
@@ -371,7 +361,6 @@ _completed_
 
 ## Contact
 
-Created by @mkrolczykG - feel free to contact me!
+Created by @mkrolczyk12 - feel free to contact me!
 
-- Slack: Marcin Krolczyk
-- E-mail: mkrolczyk@griddynamics.com
+- E-mail: m.krolczyk66@gmail.com
