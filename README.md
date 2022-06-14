@@ -3,7 +3,6 @@
 
 ## Table of contents
 - [Task content](#task-content)
-- [Technologies and dependencies](#technologies-and-dependencies)
 - [Requirements](#requirements)
 - [Project prepare instruction](#project-prepare-instruction)
 - [Running project tasks](#running-project-tasks)
@@ -12,11 +11,6 @@
 - [Contact](#contact)
 
 ## Task content 
-### Domain
-You work at a data engineering department of a company building an ecommerce platform. There is a mobile application that
-is used by customers to transact with its on-line store. Marketing department of the company has set up various campaigns
-(e.g. “Buy one thing and get another one as a gift”, etc.)  via different marketing channels (e.g. Google / Yandex / Facebook Ads,
-etc.).
 
 ###  Given datasets
 ####  Mobile App click stream projection
@@ -28,19 +22,13 @@ Schema:
 * eventType: String
 * attributes: Map[String, String]
 
-There could be events of the following types that form a user engagement session:
+It include events of the following types that form a user engagement session:
 
 * app_open
 * search_product
 * view_product_details
 * purchase
 * app_close
-
-Events of app_open type may contain the attributes relevant to the marketing analysis:
-* campaign_id
-* channel_id
-
-Events of purchase type contain purchase_id attribute.
 
 ####  Purchases projection
 
@@ -54,9 +42,7 @@ Schema:
 
 ####  Tasks #1 - Build Purchases Attribution Projection
 
-The projection is dedicated to enabling a subsequent analysis of marketing campaigns and channels. <br />
-
-The target schema:
+Target schema:
 
 * purchaseId: String
 * purchaseTime: Timestamp
@@ -66,54 +52,26 @@ The target schema:
 * campaignId: String  // derived from app_open#attributes#campaign_id
 * channelIid: String    // derived from app_open#attributes#channel_id
 
-Requirements for implementation of the projection building logic: <br />
+####  Tasks #2
 
-* Task #1.1 - Implement it by utilizing default Spark SQL capabilities. <br />
-* Task #1.2 - Implement it by using a custom Aggregator or UDAF. <br />
+Target: <br />
 
-####  Tasks #2 - Calculate Marketing Campaigns And Channels Statistics
+#2.1. Top Campaigns:
+* Top 10 marketing campaigns that bring the biggest revenue <br />
 
-Use the purchases-attribution projection to build aggregates that provide the following insights: <br />
+#2.2. Channels engagement performance:
+* Most popular (i.e. Top) channel that drives the highest amount of unique sessions (engagements)<br />
 
-Task #2.1. Top Campaigns:
-* What are the Top 10 marketing campaigns that bring the biggest revenue (based on billingCost of confirmed purchases)? <br />
+####  Tasks #3
 
-Task #2.2. Channels engagement performance:
-* What is the most popular (i.e. Top) channel that drives the highest amount of unique sessions (engagements)  with the App in each campaign? <br />
+Target: <br />
 
-Requirements for task #2:
+#3.1. Compare performance on top CSV input and parquet input. <br />
 
-* Should be implemented by using plain SQL on top of Spark DataFrame API
-* Will be a plus: an additional alternative implementation of the same tasks by using Spark Scala DataFrame / Datasets  API only (without plain SQL)
-
-####  Tasks #3 - (Optional) - Organize data warehouse and calculate metrics for time period
-
-Task #3.1. Convert input dataset to parquet. Think about partitioning. Compare performance on top CSV input and parquet input. Save output for Task #1 as parquet as well <br />
-Task #3.2. Calculate metrics from Task #2 for different time periods:
+#3.2. Metrics from Task #2 for different time periods:
 * For September 2020
 * For 2020-11-11 <br />
-Compare performance on top csv input and partitioned parquet input. Print and analyze query plans (logical and physical) for both inputs. <br />
-
-Requirements for Task 3:
-* General input dataset should be partitioned by date
-* Save query plans as *.MD file. It will be discussed on exam
-
-Build  Weekly purchases Projection within one quarter
-
-### General requirements
-
-The requirements that apply to all tasks:
-
-* Use Spark version 2.4.5 or higher
-* The logic should be covered with unit tests
-* The output should be saved as PARQUET files
-* Configurable input and output for both tasks
-* README file in the project documenting the solution
-
-## Technologies and dependencies
-* Scala 2.12.10
-* Spark 3.1.1
-* sbt 1.4.9
+With performance on top csv input and partitioned parquet input. <br />
 
 ## Requirements
 * Git
